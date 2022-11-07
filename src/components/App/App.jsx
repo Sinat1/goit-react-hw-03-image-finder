@@ -9,31 +9,47 @@ export default class App extends Component {
   state = {
     requestName: '',
     images: [],
-    showModal: false,
+    bigImageLink: '',
+    bigImageDescription: '',
   };
 
   handleFormSubmit = requestName => {
     this.setState({ requestName });
-  }
-  
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+  };
+
+  setBigImageLink = (link, desc) => {
+    this.setState({ bigImageLink: link, bigImageDescription: desc });
+  };
+
+  resetBigImageLink = () => {
+    this.setState({ bigImageLink: '', bigImageDescription: '' });
+  };
+
+  updateImages = images => {
+    this.setState(prevState => ({ images: [...prevState.images, ...images] }));
+    // this.setState(prevState => ({ ...prevState, images }));
   };
 
   render() {
-    const { showModal } = this.state;
+    const { images, requestName, bigImageLink } = this.state;
 
     return (
       <div>
         <Searchbar onSubmit={this.handleFormSubmit} />
         <ImageGallery
-          requestName={this.state.requestName}
-          galleryImages={this.state.images}
+          requestName={requestName}
+          galleryImages={images}
+          updateImages={this.updateImages}
+          clickProp={this.setBigImageLink}
         />
-        {showModal && <Modal onClose={this.toggleModal} />}
-        <ToastContainer autoClose={3000} />
+        {bigImageLink.length > 0 && (
+          <Modal
+            onClose={this.resetBigImageLink}
+            requestName={requestName}
+            imageLink={bigImageLink}
+          />
+        )}
+        <ToastContainer autoClose={1500} />
       </div>
     );
   }

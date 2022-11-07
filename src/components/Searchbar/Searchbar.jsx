@@ -1,7 +1,5 @@
 import { toast } from 'react-toastify';
-
-// import PropTypes from 'prop-types';
-
+import PropTypes from 'prop-types';
 import {
   StyledSearchbar,
   StyledSearchForm,
@@ -24,7 +22,7 @@ class Searchbar extends Component {
     event.preventDefault();
 
     if (this.state.requestName.trim() === '') {
-      return toast.error('Type something in the input');
+      return toast.warning('Type something in the input');
     }
     this.props.onSubmit(this.state.requestName);
     this.setState({ requestName: '' });
@@ -52,8 +50,8 @@ class Searchbar extends Component {
   }
 }
 
-// Searchbar.propTypes = {
-//   onSubmit: PropTypes.func,
-// };
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
 
 export default Searchbar;

@@ -1,77 +1,93 @@
+import { toast } from 'react-toastify';
 import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 import { Component } from 'react';
 import * as ImageService from 'api/fetchImages';
+import { SlyledImageGallery } from './ImageGallery.styled';
+import { Loader } from 'components/Loader/Loader';
+import Button from 'components/Button';
+import PropTypes from 'prop-types';
 
 export default class ImageGallery extends Component {
-    state = {
-        page: 1,
-        // imageRequest: null,
-        // error: null,
-        //   status: 'idle',
-    };
+  state = {
+    page: 1,
+    isLoading: false,
+  };
 
-    componentDidUpdate(prevProps, prevState) {
-        if (prevState.requestName !== this.state.requestName) {
-            this.fetchImages(this.state.requestName, this.state.page);
-        };
-    };
-
-    getImages = async (requestName, page) => {
-        const { photos } = await ImageService.fetchImages(requestName, page);
-        this.setState(prevState => ({ galleryImages: [...prevState.galleryImages, ...photos] }));
+  componentDidUpdate(prevProps, prevState) {
+    if (prevProps.requestName !== this.props.requestName) {
+      this.setState({ page: 1 });
     }
-        
-    // if (prevProps.requestName !== this.props.requestName) {
-    //   this.setState({ status: 'pending' });
-    //   fetch(
-    //     `https://pixabay.com/api/?q=${this.props.requestName}&page=1&key=31096187-0d9572226d1d5a0a27ca69533&image_type=photo&orientation=horizontal&per_page=12`
-    //   )
-    //     .then(response => {
-    //       if (response.ok) {
-    //         return response.json();
-    //       }
-    //       return Promise.reject(
-    //         new Error(`wrong request ${this.props.requestName}`)
-    //       );
-    //     })
-    //     .then(imageRequest =>
-    //       this.setState({ imageRequest, status: 'resolved' })
-    //     )
-    //     .catch(error => this.setState({ error, status: 'rejected' }));
-    // }
-  
+    if (
+      prevState.page !== this.state.page ||
+      prevProps.requestName !== this.props.requestName
+    ) {
+      console.log('fetch data');
+      this.getImages(this.props.requestName, this.state.page);
+    }
+  }
 
-    render() {
-      
+  loadMore = () => {
+    this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
+  };
 
-        //   const { imageRequest, error, status } = this.state;
-        const { galleryImages } = this.props;
-        // if (status === 'idle') {
-        //   return <div>Type request</div>;
-        // }
+  getImages = async (requestName, page) => {
+    try {
+      this.setState({ isLoading: true });
 
-        // if (status === 'pending') {
-        //   return <div>Loading images...</div>;
-        // }
+      const { hits } = await ImageService.fetchImages(requestName, page);
+      // this.setState(prevState => ({ galleryImages: [...prevState.galleryImages, ...hits] }));
+      // this.props.updateImages(hits);
+      if (hits.length > 0) {
+        this.props.updateImages(hits);
+        toast.success('Hooray, we found something!');
+        this.setState({ isLoading: false });
+      } else {
+        this.setState({ isLoading: false });
+        toast.error('Something went wrong');
+      }
+    } catch (error) {
+      toast.error(`${error.message}`);
+    }
+  };
 
-        // if (status === 'rejected') {
-        //   return <h1>{error.message}</h1>;
-        // }
+  clickHandlerFunction = (link, desc) => {
+    this.props.clickProp(link, desc);
+  };
 
-        // if (status === 'resolved') {
-        return (
-            <ul>
-                {galleryImages.map(image => (
-                    <ImageGalleryItem
-                        key={image.id}
-                        id={image.id}
-                        preview={image.webformatURL}
-                        detailedView={image.largeImageURL}
-                    />
-                ))}
-              
-            </ul>
-        );
-        // }
-    };
+  render() {
+    const { galleryImages } = this.props;
+    const { isLoading } = this.state;
+    return (
+      <>
+        {isLoading && <Loader />}
+        <SlyledImageGallery>
+          {galleryImages.map(image => (
+            <ImageGalleryItem
+              key={image.id}
+              id={image.id}
+              preview={image.webformatURL}
+              clickHandler={() =>
+                this.clickHandlerFunction(image.largeImageURL, image.tags)
+              }
+              tags={image.tags}
+            />
+          ))}
+        </SlyledImageGallery>
+        {galleryImages.length > 0 && galleryImages.length >= 12 ? (
+          <Button onClick={this.loadMore} />
+        ) : (
+          ''
+        )}
+      </>
+    );
+  }
+}
+
+ImageGallery.propTypes = {
+  requestName: PropTypes.string.isRequired,
+  galleryImages: PropTypes.array.isRequired,
+  updateImages: PropTypes.func.isRequired,
+  clickProp: PropTypes.func.isRequired,
 };
