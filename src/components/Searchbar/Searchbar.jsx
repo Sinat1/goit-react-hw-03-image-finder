@@ -20,7 +20,6 @@ class Searchbar extends Component {
 
   handleSumbit = event => {
     event.preventDefault();
-
     if (this.state.requestName.trim() === '') {
       return toast.warning('Type something in the input');
     }

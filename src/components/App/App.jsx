@@ -14,18 +14,56 @@ export default class App extends Component {
     bigImageLink: '',
     bigImageDescription: '',
     page: 1,
+    isLoading: false,
+    loadAllPages: false,
   };
 
-//FORM HANDLER START//
-  
+  componentDidUpdate(_, prevState) {
+    if (
+      prevState.page !== this.state.page ||
+      prevState.requestName !== this.state.requestName
+    ) {
+      this.getImages(this.state.requestName, this.state.page);
+    }
+  }
+
   handleFormSubmit = requestName => {
-    this.setState({ requestName });
+    if (requestName !== this.state.requestName) {
+      this.setState({
+        requestName,
+        images: [],
+        page: 1,
+        loadAllPages: false,
+      });
+    }
   };
 
-//FORM HANDLER END//
+  getImages = async (requestName, page) => {
+    try {
+      this.setState({ isLoading: true });
+      const { hits } = await ImageService.fetchImages(requestName, page);
+      if (hits.length > 0) {
+        this.setState(prevState => ({
+          images: [...prevState.images, ...hits],
+          loadAllPages: true,
+        }));
+        toast.success('Hooray, we found something!');
+        this.setState({ isLoading: false });
+      } else {
+        this.setState({ isLoading: false });
+        toast.error('Something went wrong');
+      }
+    } catch (error) {
+      toast.error(`${error.message}`);
+    }
+  };
 
-//MODAL HELPER METHODS START// 
-  
+  loadMore = () => {
+    this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
+  };
+
   setBigImageLink = (link, desc) => {
     this.setState({ bigImageLink: link, bigImageDescription: desc });
   };
@@ -34,42 +72,16 @@ export default class App extends Component {
     this.setState({ bigImageLink: '', bigImageDescription: '' });
   };
 
-//MODAL HELPER METHODS END// 
-
-//FETCH IMAGES START//
-  getImages = async (requestName, page) => {
-    try {
-      const { hits } = await ImageService.fetchImages(requestName, page);
-      if (hits.length > 0) {
-        this.setState(prevState => ({ images: [...prevState.images, hits] }));
-        toast.success('Hooray, we found something!');
-      } else {
-        // this.setState({ isLoading: false });
-        toast.error('Something went wrong');
-      }
-    } catch (error) {
-      toast.error(`${error.message}`);
-    }
-  }
-  // updateImages = images => {
-  //   this.setState(prevState => ({ images: [...prevState.images, ...images] }));
-  //   // this.setState(prevState => ({ ...prevState, images }));
-  // };
-
-//FETCH IMAGES END//
-
   render() {
-    const { images, requestName, bigImageLink, page } = this.state;
+    const { images, requestName, bigImageLink, page, isLoading } = this.state;
 
     return (
       <div>
-        <Searchbar onSubmit={this.handleFormSubmit}/>
+        <Searchbar onSubmit={this.handleFormSubmit} page={page} />
         <ImageGallery
-          requestName={requestName}
           galleryImages={images}
-          page={page}
-          // updateImages={this.updateImages}
-          renderImages={this.getImages}
+          onLoadMore={this.loadMore}
+          isLoading={isLoading}
           clickProp={this.setBigImageLink}
         />
         {bigImageLink.length > 0 && (
